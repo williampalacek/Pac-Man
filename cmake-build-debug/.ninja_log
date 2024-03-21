@@ -1,0 +1,16 @@
+# ninja log v5
+3	2401	7327666088181092	CMakeFiles/tests.dir/tests.cpp.obj	3c142cf9b380578
+21	80	7327666763265446	CMakeFiles/project.dir/game.c.obj	6bbe697e95146a25
+11	85	7327666763311346	CMakeFiles/project.dir/apsc142project.c.obj	ec2b74192f690a09
+16	73	7327666763200189	CMakeFiles/project.dir/ghost.c.obj	5980d5a1ba0ec74d
+1	261	7327668779162937	build.ninja	cb981f3168443b7d
+2	116	7327571451857364	CMakeFiles/project.dir/colours.c.obj	241bf2dae481315b
+109	371	7327647767510197	CMakeFiles/tests.dir/colours.c.obj	ee45a8ba7b871dcb
+12	70	7327666064937940	CMakeFiles/tests.dir/ghost.c.obj	e83d414d0b70b05
+3	88	7327666763351426	CMakeFiles/project.dir/map.c.obj	2fd5d1aadb1265a7
+88	162	7327666764054366	project.exe	d30497cdb8515515
+9	75	7327666064988010	CMakeFiles/tests.dir/game.c.obj	fcd0eb6e935320
+17	95	7327666065197923	CMakeFiles/tests.dir/map.c.obj	e237b859e7868409
+8054	8986	7327658831870791	tests.exe	b7f759688a618f8d
+3	83	7327668628783433	CMakeFiles/tests.dir/apsc142project.c.obj	a5277047b28ce6d5
+1	103	7327668779162937	build.ninja	cb981f3168443b7d
