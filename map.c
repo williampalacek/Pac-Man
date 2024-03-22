@@ -10,34 +10,26 @@
 extern char *map, *dot_map;
 extern int width, height, pacman_y, pacman_x, ghosts_y[NUM_GHOSTS], ghosts_x[NUM_GHOSTS];
 
-
+// Moves an actor (Pacman or ghosts) on the map based on direction, with the option to eat dots.
 int move_actor(int * y, int * x, char direction, int eat_dots) {
     int newY = *y, newX = *x;
     int index = newY * width + newX;
 
-    // Determine the new position based on the direction
+    // Update position based on direction
     switch (direction) {
-        case UP:
-            newY -= 1;
-            break;
-        case DOWN:
-            newY += 1;
-            break;
-        case LEFT:
-            newX -= 1;
-            break;
-        case RIGHT:
-            newX += 1;
-            break;
-        default:
-            return MOVED_INVALID_DIRECTION;
+        case UP:    newY -= 1; break;
+        case DOWN:  newY += 1; break;
+        case LEFT:  newX -= 1; break;
+        case RIGHT: newX += 1; break;
+        default:    return MOVED_INVALID_DIRECTION;
     }
-    // Check if the new position is a wall
+
+    // Abort if new position is a wall
     if (is_wall(newY, newX) == YES_WALL) {
         return MOVED_WALL;
     }
 
-
+    // Eat dot at new position if applicable
     if (eat_dots == EAT_DOTS && dot_map[index] == DOT) {
         dot_map[index] = EMPTY; // Pacman eats the dot
     }
@@ -50,17 +42,18 @@ int move_actor(int * y, int * x, char direction, int eat_dots) {
     return MOVED_OKAY;
 }
 
+// Updates the main map from dot_map, placing Pacman and ghosts.
 int update_map(void){
     // Copy the dot_map to the main map, resetting previous positions
     for(int i = 0; i < width * height; i++) {
         map[i] = dot_map[i];
     }
 
-    // Place Pacman on the map
+    // Place Pacman on the map and mark his position
     int pacman_index = pacman_y * width + pacman_x;
     map[pacman_index] = PACMAN;
 
-    // Place each ghost on the map
+    // Place each ghost on the map and mark there position
     for (int i = 0; i < NUM_GHOSTS; i++) {
         int ghost_index = ghosts_y[i] * width + ghosts_x[i];
         map[ghost_index] = GHOST;
@@ -69,6 +62,7 @@ int update_map(void){
     return NO_ERROR;
 }
 
+// Prints the game map with colored symbols for different actors.
 int print_map(void) {
     update_map();
 
@@ -76,7 +70,7 @@ int print_map(void) {
         for (int x = 0; x < width; x++) {
             char mapChar = map[y * width + x];
 
-            // Apply color based on the character
+            // Color-code output
             if (mapChar == PACMAN) {
                 change_text_colour(YELLOW);
             } else if (mapChar == GHOST) {
@@ -96,10 +90,11 @@ int print_map(void) {
     return NO_ERROR;
 }
 
+// Determines if a given map location is a wall.
 int is_wall(int y, int x) {
     // Ensure the coordinates are within the bounds of the map
     if (y < 0 || y >= height || x < 0 || x >= width) {
-        return YES_WALL; // Out of bounds can be considered a wall or return an error; depends on game logic
+        return YES_WALL; // Out of bounds can be considered a wall or return an error
     }
 
     int index = y * width + x; // Calculate the index in the flat array
@@ -112,16 +107,15 @@ int is_wall(int y, int x) {
     }
 }
 
+// Finds initial positions of Pacman and ghosts from the map.
 int find_initial_positions(void) {
     int ghost_count = 0;
-    pacman_x = pacman_y = -1;
+    pacman_x = pacman_y = -1; // Reset positions to impossible values
 
-    for(int i = 0; i < NUM_GHOSTS; i++) {
-        ghosts_y[i] = 0;
-        ghosts_x[i] = 0;
-    }
+    // Initialize ghost positions
+    for(int i = 0; i < NUM_GHOSTS; i++) ghosts_y[i] = ghosts_x[i] = 0;
 
-
+    // Scan map for Pacman and ghosts
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int index = y * width + x; // Calculate the index in the flat map array.
@@ -136,6 +130,8 @@ int find_initial_positions(void) {
             }
         }
     }
+
+    // Return error codes if Pacman or ghosts are not found
     if(pacman_x == -1 || pacman_y == -1){
         return ERR_NO_PACMAN;
     }
@@ -147,8 +143,9 @@ int find_initial_positions(void) {
     }
 }
 
+// Loads and initializes the game map from a file.
 char * load_map(char *filename, int *map_height, int *map_width) {
-    *map_height = height = 1;
+    *map_height = height = 1; // Initial size
     *map_width = width = 0;
 
     int mapIndex, elementCount = 0, errorKey;
@@ -157,7 +154,7 @@ char * load_map(char *filename, int *map_height, int *map_width) {
     FILE* file = fopen(filename, "r");
     if (!file) {
         printf("Error: Unable to open the file.\n");
-        return (char *) ERR_NO_MAP;
+        return (char *) ERR_NO_MAP; // File read error
     }
 
     while((ch= fgetc(file)) != EOF){
@@ -177,8 +174,7 @@ char * load_map(char *filename, int *map_height, int *map_width) {
     //width *=2;
     height += 2; // Adding walls on the top and bottom
 
-    //printf("Adjusted map dimensions with walls - Width: %d, Height: %d\n", width, height);
-
+    // Allocate memory for maps
     tempMap = (char*)malloc(width * height * sizeof(char));
     tempDotMap = (char*)malloc(width * height * sizeof(char));
 
@@ -187,10 +183,10 @@ char * load_map(char *filename, int *map_height, int *map_width) {
         free(tempMap); // Ensure to free allocated memory to avoid leaks
         free(tempDotMap);
         fclose(file);
-        return NULL;
+        return NULL; // Allocation failure
     }
 
-// Initialize dot map with walls
+    // Initialize maps with walls and empty spaces
     for(int i = 0; i < width * height; i++) {
         // Top row or sides or Bottom row
         if(i < width|| i % width == 0 || (i+1) % width == 0 || i >= width * (height - 1)) {
@@ -202,6 +198,7 @@ char * load_map(char *filename, int *map_height, int *map_width) {
         }
     }
 
+    // Reload file and populate maps
     rewind(file); // Go back to the start of the file to read the map content
     mapIndex = width + 1; // Start just after the top wall and first side wall
     while((ch = fgetc(file)) != EOF) {
@@ -220,12 +217,13 @@ char * load_map(char *filename, int *map_height, int *map_width) {
 
     fclose(file);
 
-    // Assigning the populated maps to the global pointers
+    // Assign global pointers and sizes
     map = tempMap;
     dot_map = tempDotMap;
     *map_height = height;
     *map_width = width;
 
+    // Find and validate initial positions
     errorKey = find_initial_positions();
 
     if (errorKey == ERR_NO_PACMAN){
@@ -235,7 +233,5 @@ char * load_map(char *filename, int *map_height, int *map_width) {
         return (char *) ERR_NO_GHOSTS;
     }
 
-   // free(tempDotMap);
-   // free(tempMap);
     return map;
 }

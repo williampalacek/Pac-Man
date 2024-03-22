@@ -20,9 +20,13 @@
 // Almost every function needs these variables, so keeping them as globals helps keep things organized.
 // map is a pointer to a dynamically allocated map for displaying to the user
 // dot_map is a pointer to a dynamically allocated map for keeping track of what dots are left
-char *map = NULL, *dot_map = NULL;
-// width and height store the width and height of map, NOT counting outer walls
-int width, height, pacman_y, pacman_x, ghosts_y[NUM_GHOSTS], ghosts_x[NUM_GHOSTS];
+
+
+// Global variables for storing the game state. Using globals facilitates access across multiple functions.
+char *map = NULL, *dot_map = NULL; // Pointers to dynamically allocated maps for display and dot tracking
+int width, height;                 // Dimensions of the map, excluding outer walls
+int pacman_y, pacman_x;            // Pacman's position coordinates
+int ghosts_y[NUM_GHOSTS], ghosts_x[NUM_GHOSTS]; // Arrays to store positions of ghosts
 
 
 
@@ -39,50 +43,61 @@ int width, height, pacman_y, pacman_x, ghosts_y[NUM_GHOSTS], ghosts_x[NUM_GHOSTS
  * @return a status code
  */
 int main(void) {
-    setbuf(stdout, NULL);
-    char* filename = MAP_NAME;
+    setbuf(stdout, NULL); // Disable buffering for stdout to allow for real-time display updates
 
-    int gameStatus;
-    char input = ' ', ghostStatus;
+    char* filename = MAP_NAME; // The name of the map file to load
 
+    int gameStatus; // Variable to hold the current status of the game (win/lose)
+    char input = ' ', ghostStatus; // Variables for storing player input and ghost behavior
+
+    // Attempt to load the map from the specified file
     map = load_map(filename, &height, &width);
 
-    if((int) map == ERR_NO_MAP){
+    // Check for errors in map loading and return corresponding error codes
+    if((int) map == ERR_NO_MAP) {
         return ERR_NO_MAP;
     }
-    else if ((int) map == ERR_NO_GHOSTS){
+    else if ((int) map == ERR_NO_GHOSTS) {
         return ERR_NO_GHOSTS;
     }
-    else if ((int) map == ERR_NO_PACMAN){
+    else if ((int) map == ERR_NO_PACMAN) {
         return ERR_NO_PACMAN;
     }
 
-    print_map();
+    // Main game loop: continues until 'q' is pressed
+    print_map(); // Display the initial map state
     while (input != 'q' ){
-        input = getch();
+        input = getch(); // Read a character from the user without waiting for Enter
+
+        // Move Pacman based on user input, potentially eating dots
         move_actor(&pacman_y, &pacman_x, input, EAT_DOTS);
+
+        // Process ghost movement based on their vision of Pacman
         for (int i = 0; i < NUM_GHOSTS; i++) {
             ghostStatus = sees_pacman(pacman_y, pacman_x, ghosts_y[i], ghosts_x[i]);
             if (ghostStatus != SEES_NOTHING) {
                 move_actor(&ghosts_y[i], &ghosts_x[i], ghostStatus, REPLACE_DOTS);
             }
         }
+
+        // Re-display the map after movements
         print_map();
-        // Check win/lose conditions
+
+        // Check for win/lose conditions after each turn
         gameStatus = check_win(pacman_y, pacman_x, ghosts_y, ghosts_x);
         if (gameStatus == YOU_WIN) {
             printf("Congratulations! You win!\n");
-            break;
+            break; // Exit the game loop on win
         }
 
         gameStatus = check_loss(pacman_y, pacman_x, ghosts_y, ghosts_x);
         if (gameStatus == YOU_LOSE) {
             printf("Sorry, you lose.\n");
-            break;
+            break; // Exit the game loop on loss
         }
-
     }
 
+    // Clean up allocated resources before exiting
     cleanup_game_resources();
-    return NO_ERROR;
+    return NO_ERROR; // Return with a status code indicating no errors occurred
 }
