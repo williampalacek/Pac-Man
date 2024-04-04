@@ -1,103 +1,118 @@
 // APSC 142 Engineering Programming Project Starter Code
 // Copyright Sean Kauffman 2024
 
-// don't forget to update your project configuration to select "Emulate terminal in the output console"
+// Reminder to update your project configuration to use "Emulate terminal in the output console"
 
-// Make sure to include all relevant libraries
-#include <stdio.h>
-#include <stdlib.h>
+// Including standard and necessary libraries
+#include <stdio.h>   // For input/output functions
+#include <stdlib.h>  // For general utilities like memory allocation, program control, etc.
+#include <time.h>    // For dealing with time, necessary for random number generation
 
-// colours.h contains functions to change text colour and read single characters without requiring an enter
-#include "colours.h"
-// defines.h contains useful definitions to keep your code readable
-#include "defines.h"
-// map.h, game.h, and ghost.h contain prototypes of functions you must implement
-#include "map.h"
-#include "game.h"
-#include "ghost.h"
+// Including custom header files for additional functionality and organization
+#include "colours.h"  // Contains functions for changing text color and character input handling
+#include "defines.h"  // Contains definitions for improved code readability
+#include "map.h"      // Function prototypes for map-related operations
+#include "game.h"     // Function prototypes for game logic
+#include "ghost.h"    // Function prototypes for ghost behavior
 
-// These global variables must be used to store map information.
-// Almost every function needs these variables, so keeping them as globals helps keep things organized.
-// map is a pointer to a dynamically allocated map for displaying to the user
-// dot_map is a pointer to a dynamically allocated map for keeping track of what dots are left
+// Declaration of global variables to store game state information
+char *map = NULL, *dot_map = NULL; // Pointers to dynamic arrays for the game map and dot tracking
+int width, height;                 // Variables to store map dimensions
 
-
-// Global variables for storing the game state. Using globals facilitates access across multiple functions.
-char *map = NULL, *dot_map = NULL; // Pointers to dynamically allocated maps for display and dot tracking
-int width, height;                 // Dimensions of the map, excluding outer walls
-int pacman_y, pacman_x;            // Pacman's position coordinates
-int ghosts_y[NUM_GHOSTS], ghosts_x[NUM_GHOSTS]; // Arrays to store positions of ghosts
-
-
+extern int pacman_y, pacman_x;            // Variables to store Pacman's position
+extern int ghosts_y[NUM_GHOSTS], ghosts_x[NUM_GHOSTS]; // Arrays to store the positions of multiple ghosts
 
 /**
- * Main entry point into your program.
- * Make sure that main returns appropriate status codes depending on what
- * happens.  The codes you must use are:
- *   NO_ERROR when no error occurs
- *   ERR_NO_MAP when no map file is found
- *   ERR_NO_PACMAN when no pacman is found on the map
- *   ERR_NO_GHOSTS when fewer than 2 ghosts are found on the map
+ * The main function acts as the entry point of the program.
  *
- * Make sure that any allocated memory is freed before returning.
- * @return a status code
+ * It initializes game resources, handles the main game loop, and cleans up resources upon exit.
+ * The function returns different status codes based on the game's end condition or errors encountered.
+ *
+ * Status codes:
+ *   NO_ERROR - Indicates the game exited without errors.
+ *   ERR_NO_MAP - Returned if the map file could not be found.
+ *   ERR_NO_PACMAN - Returned if Pacman could not be found on the map.
+ *   ERR_NO_GHOSTS - Returned if less than the required number of ghosts are found.
+ *
+ * Before exiting, the function ensures all dynamically allocated memory is freed.
  */
 int main(void) {
-    setbuf(stdout, NULL); // Disable buffering for stdout to allow for real-time display updates
+    setbuf(stdout, NULL);
+    srand(time(NULL)); // Seeds the random number generator with current time for unpredictability
 
-    char* filename = MAP_NAME; // The name of the map file to load
+    char* filename = MAP_NAME; // Assigns the map file name to a variable
 
-    int gameStatus; // Variable to hold the current status of the game (win/lose)
-    char input = ' ', ghostStatus; // Variables for storing player input and ghost behavior
+    int gameStatus, counter = 0; // Variable to track the game's win/lose status
+    char input = ' ', ghostStatus; // Variables for player input and ghost AI decision-making
 
-    // Attempt to load the map from the specified file
+    // Loading the game map from a file
     map = load_map(filename, &height, &width);
 
-    // Check for errors in map loading and return corresponding error codes
-    if((int) map == ERR_NO_MAP) {
-        return ERR_NO_MAP;
+    // Handling possible errors during map loading
+    if((int) map == NULL) {
+        return ERR_NO_MAP; // Map file not found
     }
     else if ((int) map == ERR_NO_GHOSTS) {
-        return ERR_NO_GHOSTS;
+        return ERR_NO_GHOSTS; // Not enough ghosts on the map
     }
     else if ((int) map == ERR_NO_PACMAN) {
-        return ERR_NO_PACMAN;
+        return ERR_NO_PACMAN; // Pacman not found on the map
     }
 
-    // Main game loop: continues until 'q' is pressed
-    print_map(); // Display the initial map state
-    while (input != 'q' ){
-        input = getch(); // Read a character from the user without waiting for Enter
+    // New call to initialize dot_map based on the loaded map
+    fill_initial_dot_map();
 
-        // Move Pacman based on user input, potentially eating dots
+    // Main game loop starts, continues until 'q' is pressed
+    print_map(); // Initial display of the game map
+    while (input != 'q' ){
+        input = getch(); // Reads user input without requiring Enter
+
+        // Moving Pacman based on the player's input
         move_actor(&pacman_y, &pacman_x, input, EAT_DOTS);
 
-        // Process ghost movement based on their vision of Pacman
+        // Processing each ghost's movement based on their AI
         for (int i = 0; i < NUM_GHOSTS; i++) {
             ghostStatus = sees_pacman(pacman_y, pacman_x, ghosts_y[i], ghosts_x[i]);
-            if (ghostStatus != SEES_NOTHING) {
+            if (ghostStatus == SEES_NOTHING) {
+                // Random movement logic when Pacman is not visible
+                char possibleDirections[] = {UP, DOWN, LEFT, RIGHT};
+                int randomIndex;
+                char direction;
+                int moveResult;
+                do {
+                    randomIndex = rand() % 4; // Select a random direction
+                    direction = possibleDirections[randomIndex];
+                    moveResult = move_actor(&ghosts_y[i], &ghosts_x[i], direction, REPLACE_DOTS);
+                    if(counter >= 10){
+                        break;
+                    }
+                    counter++;
+                } while (moveResult == MOVED_WALL); // Ensure the selected direction is not a wall
+                counter = 0;
+            } else if (ghostStatus != EATING_PACMAN) {
                 move_actor(&ghosts_y[i], &ghosts_x[i], ghostStatus, REPLACE_DOTS);
             }
         }
 
-        // Re-display the map after movements
+        // Update the display after each turn
         print_map();
 
-        // Check for win/lose conditions after each turn
-        gameStatus = check_win(pacman_y, pacman_x, ghosts_y, ghosts_x);
-        if (gameStatus == YOU_WIN) {
-            printf("Congratulations! You win!\n");
-            break; // Exit the game loop on win
-        }
-
+        // Checking for loss condition
         gameStatus = check_loss(pacman_y, pacman_x, ghosts_y, ghosts_x);
         if (gameStatus == YOU_LOSE) {
             printf("Sorry, you lose.\n");
-            break; // Exit the game loop on loss
+            break; // Game ends on loss
+        }
+
+        // Checking for win condition
+        gameStatus = check_win(pacman_y, pacman_x, ghosts_y, ghosts_x);
+        if (gameStatus == YOU_WIN) {
+            printf("Congratulations! You win!\n");
+            break; // Game ends on win
         }
     }
 
-    // Clean up allocated resources before exiting
+    // Cleanup before program exit
     cleanup_game_resources();
-    return NO_ERROR; // Return with a status code indicating no errors occurred
+    return NO_ERROR; // Indicating the game concluded without any errors
 }

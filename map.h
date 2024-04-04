@@ -96,7 +96,8 @@ int move_actor(int * y, int * x, char direction, int eat_dots);
 /** Other function prototypes can go below here **/
 
 
-int find_initial_positions(void);
+int find_initial_positions(char* tempMap);
+void fill_initial_dot_map(void);
 int print_map(void);
 int update_map(void);
 

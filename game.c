@@ -24,7 +24,7 @@ int check_win(int pacman_y, int pacman_x, int ghosts_y[NUM_GHOSTS], int ghosts_x
         for (int x = 0; x < width; x++) {
             int index = y * width + x; // Calculate the flat array index for the current cell
             // If a dot is found, the game is not won yet
-            if (dot_map[index] == DOT) {
+            if (dot_map[index] == DOT && map[index] != PACMAN) {
                 return KEEP_GOING; // A dot is still present on the map
             }
         }

@@ -5,6 +5,7 @@
 // External global variables for accessing the map and its dimensions
 extern char *map, *dot_map;
 extern int width, height;
+int failed_attempts[NUM_GHOSTS] = {0};  // Initialize all to zero
 
 /**
  * Determines if a ghost can see Pacman from its current position.
@@ -12,7 +13,7 @@ extern int width, height;
  *
  * @param pacman_y Y-coordinate of Pacman
  * @param pacman_x X-coordinate of Pacman
- * @param ghost_y Y-coordinate of the ghost
+ * @param ghost_y Y-coordinate of the ghostdaa
  * @param ghost_x X-coordinate of the ghost
  * @return char - Direction towards Pacman if seen, EATING_PACMAN if on same position, otherwise SEES_NOTHING
  */
